@@ -29,33 +29,58 @@
 
         // Carga por técnico (solo técnicos)
         // Regla nueva:
-        // - asignados = en_proceso
-        // - resueltos = resuelto
-        // - cerrado NO cuenta (sale del conteo)
+        // - en atención = en_proceso
+        // - asignados = todos los tickets asignados al técnico
+        //   (en_proceso + resuelto + cerrado)
+        // - atendidos = resuelto + cerrado
 
         $tecnicos = \App\Models\User::role('tecnico')
             ->orderBy('name')
             ->withCount([
-                // Asignados = SOLO en atención (en_proceso)
+                // En atención actual
                 'assignedTickets as in_process_count' => function ($q) {
                     $q->where('status', 'en_proceso');
                 },
 
-                // Resueltos (solo) = SOLO resuelto
+                // Total asignados históricos
+                'assignedTickets as assigned_total_count',
+
+                // Atendidos/resueltos
                 'assignedTickets as solved_count' => function ($q) {
-                    $q->where('status', 'resuelto');
+                    $q->whereIn('status', ['resuelto', 'cerrado']);
                 },
             ])
             ->get()
             ->map(function ($u) {
-                $assigned = (int) $u->in_process_count;
-                $solvedOnly = (int) $u->solved_count;
-                $resolved = $assigned + $solvedOnly; // total atendidos
+                $inProcess = (int) $u->in_process_count;
+                $assignedTotal = (int) $u->assigned_total_count;
+                $solved = (int) $u->solved_count;
 
-                $u->assigned_count = $assigned; // lo usamos como “en atención”
-                $u->solved_only = $solvedOnly; // para el texto “resueltos”
-                $u->resolved_count = $resolved; // lo usamos como “asignados”
-                $u->resolved_pct = $resolved > 0 ? (int) round(($solvedOnly / $resolved) * 100) : 0;
+                $u->assigned_count = $inProcess;
+                $u->resolved_count = $assignedTotal;
+                $u->solved_only = $solved;
+
+                $u->resolved_pct = $assignedTotal > 0 ? (int) round(($solved / $assignedTotal) * 100) : 0;
+
+                // ===== Promedio de atención =====
+                $avgMinutes = \App\Models\Ticket::query()
+                    ->where('assigned_to', $u->id)
+                    ->whereNotNull('taken_at')
+                    ->whereNotNull('resolved_at')
+                    ->whereIn('status', ['resuelto', 'cerrado'])
+                    ->get()
+                    ->avg(function ($t) {
+                        return $t->taken_at->diffInMinutes($t->resolved_at);
+                    });
+
+                if ($avgMinutes) {
+                    $hours = floor($avgMinutes / 60);
+                    $minutes = round($avgMinutes % 60);
+
+                    $u->avg_attention = ($hours ? $hours . 'h ' : '') . $minutes . 'm';
+                } else {
+                    $u->avg_attention = '—';
+                }
 
                 // ===== Opción A: Área actual = área del ticket MÁS ANTIGUO en atención del técnico =====
                 $oldestInProgress = \App\Models\Ticket::with('creator.area')
@@ -260,7 +285,7 @@
                     <div class="p-5">
                         <h3 class="text-sm font-bold text-slate-900 dark:text-slate-100">Carga por técnico</h3>
                         <p class="mt-1 text-xs text-slate-600 dark:text-slate-300">
-                            En atención (asignados) y finalizados por técnico.
+                            En atención, asignados históricos y atendidos por técnico.
                         </p>
                     </div>
 
@@ -284,18 +309,22 @@
                                         </div>
 
                                         <div
-                                            class="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-600 dark:text-slate-300">
+                                            class="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-600 dark:text-slate-300">
+
                                             <span>
                                                 <span
                                                     class="font-semibold text-slate-900 dark:text-slate-100">{{ $tec->assigned_count }}</span>
                                                 en atención
                                             </span>
 
+                                            <span class="text-slate-400 dark:text-slate-500">•</span>
+
                                             <span>
                                                 <span
-                                                    class="font-semibold text-slate-900 dark:text-slate-100">{{ $tec->resolved_count }}</span>
-                                                asignados
+                                                    class="font-semibold text-slate-900 dark:text-slate-100">{{ $tec->solved_only }}</span>
+                                                atendidos
                                             </span>
+
                                         </div>
 
                                         @if (!empty($tec->current_area))
@@ -329,8 +358,11 @@
                                         style="width: {{ $tec->resolved_pct }}%"></div>
                                 </div>
 
-                                <div class="mt-2 text-xs text-slate-500 dark:text-slate-400">
-                                    {{ $tec->solved_only }} resueltos de {{ $tec->resolved_count }} asignados
+                                <div class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                                    Tiempo promedio de resolución:
+                                    <span class="font-semibold text-slate-700 dark:text-slate-200">
+                                        {{ $tec->avg_attention }}
+                                    </span>
                                 </div>
 
                             </a>
