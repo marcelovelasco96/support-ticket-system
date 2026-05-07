@@ -22,3 +22,8 @@
 Homestead.json
 Homestead.yaml
 Thumbs.db
+/storage/app/private
+/storage/logs
+/public/images/escudo_breña.png
+/public/images/escudo_correo.png
+query
