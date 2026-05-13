@@ -1,17 +1,85 @@
 ﻿<x-app-layout>
     <x-slot name="header">
-        <div class="flex items-center justify-between">
-            <h2 class="font-semibold text-xl leading-tight
-                   text-slate-900 dark:text-slate-100">
-                Ticket #{{ $ticket->id }} - {{ $ticket->subject }}
-            </h2>
+        @php
+            $u = auth()->user();
+            $canTake = $u && $u->hasRole('tecnico') && $ticket->status === 'abierto' && empty($ticket->assigned_to);
+        @endphp
 
-            @php
-                $u = auth()->user();
-                $canTake = $u && $u->hasRole('tecnico') && $ticket->status === 'abierto' && empty($ticket->assigned_to);
-            @endphp
+        <div class="flex items-start justify-between gap-4">
+            <div class="min-w-0">
+                <div class="flex items-center gap-3">
+                    <span class="text-sm font-semibold text-slate-500 dark:text-slate-400">
+                        Ticket #{{ $ticket->id }}
+                    </span>
 
+                    <x-status-badge :status="$ticket->status" />
+                </div>
 
+                <h2 class="mt-2 font-semibold text-xl leading-tight text-slate-900 dark:text-slate-100">
+                    {{ $ticket->subject }}
+                </h2>
+
+                <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                    Creado por {{ $ticket->creator?->name ?? '—' }}
+                    · {{ $ticket->created_at?->translatedFormat('d M Y · H:i') }}
+                </p>
+            </div>
+
+            <div class="shrink-0 flex flex-wrap justify-end gap-2">
+
+                @if ($ticket->status !== 'resuelto' && $ticket->status !== 'cerrado')
+
+                    @if (auth()->user()->hasRole('admin') ||
+                            (auth()->user()->hasRole('tecnico') && (int) $ticket->assigned_to === (int) auth()->id()))
+                        <form method="POST" action="{{ route('tickets.resolve', $ticket) }}">
+                            @csrf
+                            <button type="submit"
+                                class="inline-flex items-center px-4 py-2 rounded-md text-sm font-semibold
+                    bg-emerald-600 text-white hover:bg-emerald-700
+                    transition shadow-sm">
+                                Marcar resuelto
+                            </button>
+                        </form>
+                    @endif
+
+                    @if ($ticket->status === 'en_proceso')
+                        @if (auth()->user()->hasRole('admin') ||
+                                (auth()->user()->hasRole('tecnico') && (int) $ticket->assigned_to === (int) auth()->id()))
+                            <form method="POST" action="{{ route('tickets.release', $ticket) }}">
+                                @csrf
+                                <button type="submit"
+                                    class="inline-flex items-center px-4 py-2 rounded-md text-sm font-semibold
+                        bg-amber-500 text-slate-900 hover:bg-amber-400
+                        transition shadow-sm">
+                                    Devolver a cola
+                                </button>
+                            </form>
+                        @endif
+                    @endif
+
+                @endif
+
+                @if (auth()->user()->hasRole('admin') && $ticket->status !== 'cerrado')
+                    <form method="POST" action="{{ route('tickets.close', $ticket) }}">
+                        @csrf
+                        <button type="submit"
+                            class="inline-flex items-center px-4 py-2 rounded-md text-sm font-semibold
+                border border-slate-300 text-slate-700 bg-white hover:bg-slate-50
+                dark:border-slate-600 dark:text-slate-200 dark:bg-slate-900 dark:hover:bg-slate-800
+                transition shadow-sm">
+                            Cerrar ticket
+                        </button>
+                    </form>
+                @endif
+
+                <a href="{{ url()->previous() }}"
+                    class="inline-flex items-center px-4 py-2 rounded-md text-sm font-semibold
+        bg-white text-slate-700 hover:bg-slate-50
+        dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700
+        border border-slate-200 dark:border-slate-700 shadow-sm transition">
+                    Volver
+                </a>
+            </div>
         </div>
     </x-slot>
 
@@ -36,27 +104,119 @@
 
             <div
                 class="bg-white shadow-sm sm:rounded-lg p-6
-            dark:bg-slate-900 dark:border dark:border-slate-800">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-slate-700 dark:text-slate-200">
-                    <div class="flex items-center gap-2">
-                        <span class="font-semibold">Estado:</span>
-                        <x-status-badge :status="$ticket->status" />
+                        dark:bg-slate-900 dark:border dark:border-slate-800">
+                <div
+                    class="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 p-5">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-4 text-sm">
 
-                        @if ($ticket->status === 'abierto' && is_null($ticket->assigned_to))
-                            <span class="text-xs text-gray-500">(En cola)</span>
-                        @endif
+                        <div>
+                            <div class="text-xs text-slate-500 dark:text-slate-400">Categoría</div>
+                            <div class="mt-1 font-semibold text-slate-900 dark:text-slate-100">
+                                {{ $ticket->category }}
+                            </div>
+                        </div>
+
+                        <div>
+                            <div class="text-xs text-slate-500 dark:text-slate-400">Solicitante</div>
+                            <div class="mt-1 font-semibold text-slate-900 dark:text-slate-100">
+                                {{ $ticket->creator?->name ?? '—' }}
+                            </div>
+                        </div>
+
+                        <div>
+                            <div class="text-xs text-slate-500 dark:text-slate-400">Área</div>
+                            <div class="mt-1 font-semibold text-slate-900 dark:text-slate-100">
+                                {{ $ticket->creator?->area?->name ?? '—' }}
+                            </div>
+                        </div>
+
+                        <div>
+                            <div class="text-xs text-slate-500 dark:text-slate-400">Asignado a</div>
+                            <div class="mt-1 font-semibold text-slate-900 dark:text-slate-100">
+                                {{ $ticket->assignee?->name ?? 'Sin asignar' }}
+                            </div>
+                        </div>
+
                     </div>
 
-                    <div><span class="font-semibold">Categoría:</span> {{ $ticket->category }}</div>
-                    <div><span class="font-semibold">Creado:</span> {{ $ticket->created_at }}</div>
-                    <div><span class="font-semibold">Solicitante:</span> {{ $ticket->creator?->name }}</div>
-                    <div>
-                        <span class="font-semibold">Área:</span>
-                        {{ $ticket->creator?->area?->name ?? '—' }}
+                    <div class="mt-6 pt-5 border-t border-slate-200 dark:border-slate-700">
+
+                        <div class="flex flex-wrap items-start gap-y-4">
+
+                            {{-- Creado --}}
+                            <div class="flex items-start gap-3 flex-1 min-w-[140px]">
+
+                                <div class="mt-1.5 h-3 w-3 rounded-full bg-blue-500"></div>
+
+                                <div>
+                                    <div class="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                                        Creado
+                                    </div>
+
+                                    <div class="text-xs text-slate-500 dark:text-slate-400">
+                                        {{ $ticket->created_at?->translatedFormat('d M Y · H:i') }}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {{-- Línea --}}
+                            <div class="hidden md:block flex-1 h-px opacity-0 mt-4"></div>
+
+                            {{-- Tomado --}}
+                            <div class="flex items-start gap-3 flex-1 min-w-[140px]">
+
+                                <div class="mt-1.5 h-3 w-3 rounded-full bg-amber-500"></div>
+
+                                <div>
+                                    <div class="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                                        Tomado
+                                    </div>
+
+                                    <div class="text-xs text-slate-500 dark:text-slate-400">
+                                        {{ $ticket->taken_at?->translatedFormat('d M Y · H:i') ?? '—' }}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="hidden md:block flex-1 h-px opacity-0 mt-4"></div>
+
+                            {{-- Resuelto --}}
+                            <div class="flex items-start gap-3 flex-1 min-w-[140px]">
+
+                                <div class="mt-1.5 h-3 w-3 rounded-full bg-emerald-500"></div>
+
+                                <div>
+                                    <div class="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                                        Resuelto
+                                    </div>
+
+                                    <div class="text-xs text-slate-500 dark:text-slate-400">
+                                        {{ $ticket->resolved_at?->translatedFormat('d M Y · H:i') ?? '—' }}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="hidden md:block flex-1 h-px opacity-0 mt-4"></div>
+
+                            {{-- Cerrado --}}
+                            <div class="flex items-start gap-3 flex-1 min-w-[140px]">
+
+                                <div class="mt-1.5 h-3 w-3 rounded-full bg-slate-500"></div>
+
+                                <div>
+                                    <div class="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                                        Cerrado
+                                    </div>
+
+                                    <div class="text-xs text-slate-500 dark:text-slate-400">
+                                        {{ $ticket->closed_at?->translatedFormat('d M Y · H:i') ?? '—' }}
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+
                     </div>
-                    <div><span class="font-semibold">Asignado a:</span> {{ $ticket->assignee?->name ?? '-' }}</div>
-                    <div><span class="font-semibold">Resuelto:</span> {{ $ticket->resolved_at ?? '-' }}</div>
-                    <div><span class="font-semibold">Cerrado:</span> {{ $ticket->closed_at ?? '-' }}</div>
                 </div>
 
                 @php
@@ -87,131 +247,199 @@
                     };
                 @endphp
 
-                <div
-                    class="mt-4 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 p-4">
-                    <h3 class="text-sm font-semibold text-slate-800 dark:text-slate-100 mb-3">Tiempos reales</h3>
+                <div class="mt-6 grid grid-cols-1 xl:grid-cols-3 gap-4">
 
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
-                        <div
-                            class="rounded-md bg-white/70 dark:bg-slate-900/50 p-3 border border-slate-200 dark:border-slate-700">
-                            <div class="text-xs text-slate-500">En cola</div>
-                            <div class="font-semibold text-slate-900 dark:text-slate-100">{{ $fmt($minsCola) }}</div>
-                        </div>
+                    {{-- TIEMPOS --}}
+                    <div
+                        class="xl:col-span-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 p-5">
 
-                        <div
-                            class="rounded-md bg-white/70 dark:bg-slate-900/50 p-3 border border-slate-200 dark:border-slate-700">
-                            <div class="text-xs text-slate-500">En atención</div>
-                            <div class="font-semibold text-slate-900 dark:text-slate-100">{{ $fmt($minsAttn) }}</div>
-                        </div>
+                        <h3 class="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-4">
+                            Tiempos reales
+                        </h3>
 
-                        <div
-                            class="rounded-md bg-white/70 dark:bg-slate-900/50 p-3 border border-slate-200 dark:border-slate-700">
-                            <div class="text-xs text-slate-500">Total</div>
-                            <div class="font-semibold text-slate-900 dark:text-slate-100">{{ $fmt($minsTotal) }}</div>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
+
+                            <div
+                                class="rounded-lg bg-white dark:bg-slate-900/60 p-4 border border-slate-200 dark:border-slate-700">
+                                <div class="text-xs text-slate-500 dark:text-slate-400">
+                                    En cola
+                                </div>
+
+                                <div class="mt-1 font-semibold text-slate-900 dark:text-slate-100">
+                                    {{ $fmt($minsCola) }}
+                                </div>
+                            </div>
+
+                            <div
+                                class="rounded-lg bg-white dark:bg-slate-900/60 p-4 border border-slate-200 dark:border-slate-700">
+                                <div class="text-xs text-slate-500 dark:text-slate-400">
+                                    En atención
+                                </div>
+
+                                <div class="mt-1 font-semibold text-slate-900 dark:text-slate-100">
+                                    {{ $fmt($minsAttn) }}
+                                </div>
+                            </div>
+
+                            <div
+                                class="rounded-lg bg-white dark:bg-slate-900/60 p-4 border border-slate-200 dark:border-slate-700">
+                                <div class="text-xs text-slate-500 dark:text-slate-400">
+                                    Total
+                                </div>
+
+                                <div class="mt-1 font-semibold text-slate-900 dark:text-slate-100">
+                                    {{ $fmt($minsTotal) }}
+                                </div>
+                            </div>
+
                         </div>
                     </div>
+
+                    {{-- ADJUNTOS --}}
+                    <div
+                        class="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 p-5">
+
+                        <h3 class="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-4">
+                            Adjuntos
+                        </h3>
+
+                        @if ($ticket->attachments->isEmpty())
+                            <p class="text-sm text-slate-500 dark:text-slate-400">No se adjuntaron evidencias.</p>
+                        @else
+                            <div class="space-y-3">
+
+                                @foreach ($ticket->attachments as $a)
+                                    @php
+                                        $isImage = str_starts_with((string) ($a->mime ?? ''), 'image/');
+                                    @endphp
+
+                                    <a href="{{ route('tickets.attachments.view', $a) }}" target="_blank"
+                                        class="group flex items-center gap-3 rounded-xl border border-slate-200 dark:border-slate-700
+                                                bg-white dark:bg-slate-900/60 p-3
+                                                hover:border-blue-300 dark:hover:border-blue-700
+                                                hover:bg-slate-50 dark:hover:bg-slate-800 transition">
+
+                                        @if ($isImage)
+                                            <img src="{{ route('tickets.attachments.view', $a) }}" alt="Adjunto"
+                                                class="h-12 w-12 rounded-lg object-cover border border-slate-200 dark:border-slate-700"
+                                                loading="lazy" />
+                                        @else
+                                            <div
+                                                class="h-12 w-12 rounded-lg bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-[10px] font-semibold text-slate-500 dark:text-slate-300">
+                                                FILE
+                                            </div>
+                                        @endif
+
+                                        <div class="min-w-0">
+                                            <div
+                                                class="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate group-hover:text-blue-600 dark:group-hover:text-blue-400">
+                                                {{ $a->original_name }}
+                                            </div>
+
+                                            <div class="text-xs text-slate-500 dark:text-slate-400">
+                                                Ver adjunto · {{ number_format(($a->size ?? 0) / 1024 / 1024, 2) }} MB
+                                            </div>
+                                        </div>
+
+                                    </a>
+                                @endforeach
+
+                            </div>
+                        @endif
+
+                    </div>
+
                 </div>
 
-                <div class="mt-6">
-                    <h3 class="font-semibold mb-2">Descripción</h3>
+                <div
+                    class="mt-6 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 p-5">
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="text-sm font-semibold text-slate-900 dark:text-slate-100">Descripción</h3>
+                    </div>
+
                     <div
-                        class="bg-gray-50 rounded-md border border-slate-200
-                                dark:bg-slate-800 dark:border-slate-700">
-                        <div
-                            class="px-4 py-2 whitespace-pre-wrap text-sm leading-tight
-                                text-slate-800 dark:text-slate-100">
+                        class="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900/50 p-4">
+                        <div class="whitespace-pre-wrap text-sm leading-relaxed text-slate-800 dark:text-slate-100">
                             {{ $ticket->description }}
                         </div>
                     </div>
                 </div>
 
-                <div class="mt-6">
-                    <h3 class="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-2">
-                        Adjuntos
-                    </h3>
+                <div class="mt-8">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                            Comentarios
+                        </h3>
 
-                    @if ($ticket->attachments->isEmpty())
-                        <p class="text-sm text-gray-500 dark:text-gray-400">—</p>
-                    @else
-                        <ul class="space-y-2">
-                            @foreach ($ticket->attachments as $a)
-                                <li
-                                    class="flex items-center justify-between gap-3 p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
-                                    <div class="min-w-0">
-                                        @php
-                                            $isImage = str_starts_with((string) ($a->mime ?? ''), 'image/');
-                                        @endphp
+                        <span class="text-xs text-slate-500 dark:text-slate-400">
+                            {{ $ticket->comments->count() }} comentario(s)
+                        </span>
+                    </div>
 
-                                        @if ($isImage)
-                                            <img src="{{ route('tickets.attachments.view', $a) }}" alt="Adjunto"
-                                                class="h-12 w-12 rounded object-cover border border-gray-200 dark:border-gray-700"
-                                                loading="lazy" />
-                                        @else
-                                            <div
-                                                class="h-12 w-12 rounded bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-xs text-gray-600 dark:text-gray-200">
-                                                FILE
+                    <div class="space-y-3">
+
+                        @forelse($ticket->comments as $c)
+                            <div class="flex gap-3">
+
+                                {{-- Avatar --}}
+                                <div
+                                    class="shrink-0 h-8 w-8 rounded-full bg-slate-200 dark:bg-slate-700
+                                            flex items-center justify-center text-sm font-semibold
+                                            text-slate-700 dark:text-slate-200">
+
+                                    {{ strtoupper(substr($c->user->name ?? '?', 0, 1)) }}
+                                </div>
+
+                                {{-- Contenido --}}
+                                <div class="flex-1 min-w-0">
+
+                                    <div
+                                        class="rounded-2xl border border-slate-200 dark:border-slate-700
+                                            bg-white dark:bg-slate-800/70 px-4 py-3">
+
+                                        <div class="flex items-center justify-between gap-3">
+
+                                            <div class="font-semibold text-sm text-slate-900 dark:text-slate-100">
+                                                {{ $c->user->name }}
                                             </div>
-                                        @endif
-                                        <div class="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">
-                                            {{ $a->original_name }}
+
+                                            <div class="text-xs text-slate-500 dark:text-slate-400 whitespace-nowrap">
+
+                                                @if ($c->created_at?->isToday())
+                                                    Hoy · {{ $c->created_at->format('H:i') }}
+                                                @elseif ($c->created_at?->isYesterday())
+                                                    Ayer · {{ $c->created_at->format('H:i') }}
+                                                @else
+                                                    {{ $c->created_at?->translatedFormat('d M Y · H:i') }}
+                                                @endif
+
+                                            </div>
+
                                         </div>
-                                        <div class="text-xs text-gray-500 dark:text-gray-400">
-                                            {{ strtoupper($a->mime ?? 'ARCHIVO') }}
-                                            ·
-                                            {{ number_format(($a->size ?? 0) / 1024 / 1024, 2) }} MB
+
+                                        <div
+                                            class="mt-2 whitespace-pre-wrap text-sm leading-normal
+                                                text-slate-800 dark:text-slate-100">
+                                            {{ $c->comment }}
                                         </div>
+
                                     </div>
 
-                                    <a href="{{ route('tickets.attachments.download', $a) }}"
-                                        class="text-sm hover:underline text-inherit whitespace-nowrap">
-                                        Descargar
-                                    </a>
-
-                                    @php
-                                        $u = auth()->user();
-                                        $isFinal = in_array($ticket->status, ['resuelto', 'cerrado'], true);
-                                        $canDelete =
-                                            $u &&
-                                            ($u->hasRole('admin') ||
-                                                $u->hasRole('tecnico') ||
-                                                ((int) $ticket->created_by === (int) $u->id && !$isFinal));
-                                    @endphp
-
-                                    @if ($canDelete)
-                                        <form method="POST" action="{{ route('tickets.attachments.destroy', $a) }}"
-                                            class="inline">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit"
-                                                class="text-sm text-red-600 dark:text-red-400 hover:underline whitespace-nowrap"
-                                                onclick="return confirm('¿Eliminar este adjunto?');">
-                                                Eliminar
-                                            </button>
-                                        </form>
-                                    @endif
-                                </li>
-                            @endforeach
-                        </ul>
-                    @endif
-                </div>
-
-                <div class="mt-8">
-                    <h3 class="font-semibold mb-2">Comentarios</h3>
-
-                    <div class="space-y-4">
-                        @forelse($ticket->comments as $c)
-                            <div
-                                class="p-3 rounded border border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-800">
-                                <div class="text-xs text-slate-600 dark:text-slate-300">
-                                    {{ $c->user->name }} — {{ $c->created_at }}
                                 </div>
-                                <div class="mt-1 text-sm text-slate-800 dark:text-slate-100 whitespace-pre-wrap">
-                                    {{ $c->comment }}
-                                </div>
+
                             </div>
+
                         @empty
-                            <p class="text-sm text-gray-500">No hay comentarios aún.</p>
+
+                            <div
+                                class="rounded-xl border border-dashed border-slate-300 dark:border-slate-700
+                p-6 text-center text-sm text-slate-500 dark:text-slate-400">
+
+                                No hay comentarios aún.
+
+                            </div>
                         @endforelse
+
                     </div>
                 </div>
 
@@ -251,69 +479,10 @@
                                 </button>
                             </form>
                         @endif
-
                     </div>
-
                 </div>
             </div>
-
-            <div class="mt-6 flex gap-2">
-                @if ($ticket->status !== 'resuelto' && $ticket->status !== 'cerrado')
-
-                    {{-- Admin puede resolver siempre --}}
-                    @if (auth()->user()->hasRole('admin'))
-                        <form method="POST" action="{{ route('tickets.resolve', $ticket) }}">
-                            @csrf
-                            <button type="submit"
-                                style="background:#16a34a;color:#fff;padding:8px 12px;border-radius:6px;font-size:12px;font-weight:600;">
-                                Marcar Resuelto
-                            </button>
-                        </form>
-                    @endif
-
-                    {{-- Técnico SOLO si está asignado --}}
-                    @if (auth()->user()->hasRole('tecnico') && (int) $ticket->assigned_to === (int) auth()->id())
-                        <form method="POST" action="{{ route('tickets.resolve', $ticket) }}">
-                            @csrf
-                            <button type="submit"
-                                style="background:#16a34a;color:#fff;padding:8px 12px;border-radius:6px;font-size:12px;font-weight:600;">
-                                Marcar Resuelto
-                            </button>
-                        </form>
-                    @endif
-
-                    @if ($ticket->status === 'en_proceso')
-                        @if (auth()->user()->hasRole('admin') ||
-                                (auth()->user()->hasRole('tecnico') && (int) $ticket->assigned_to === (int) auth()->id()))
-                            <form method="POST" action="{{ route('tickets.release', $ticket) }}">
-                                @csrf
-                                <button type="submit"
-                                    style="background:#f59e0b;color:#111827;padding:8px 12px;border-radius:6px;font-size:12px;font-weight:700;">
-                                    Devolver a cola
-                                </button>
-                            </form>
-                        @endif
-                    @endif
-
-
-                @endif
-
-
-                @if (auth()->user()->hasRole('admin'))
-                    @if ($ticket->status !== 'cerrado')
-                        <form method="POST" action="{{ route('tickets.close', $ticket) }}">
-                            @csrf
-                            <button type="submit"
-                                style="background:#111827;color:#fff;padding:8px 12px;border-radius:6px;font-size:12px;font-weight:600;">
-                                Cerrar Ticket
-                            </button>
-                        </form>
-                    @endif
-                @endif
-            </div>
-
         </div>
-
     </div>
     </div>
 </x-app-layout>
