@@ -143,4 +143,4 @@ Proyecto actualmente en desarrollo y mejora continua para entorno institucional.
 
 **Marcelo Velasco**  
 Ingeniero de Sistemas  
-Backend Developer | Laravel | SQL Server | Power BI
+Software Developer | Laravel | SQL Server | Power BI
