@@ -1,59 +1,146 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Support Ticket System
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Sistema interno de soporte técnico desarrollado para la Municipalidad Distrital de Breña, orientado a la gestión de incidencias, seguimiento operativo de tickets y control de atención entre usuarios, técnicos y administradores.
 
-## About Laravel
+El sistema permite centralizar solicitudes de soporte, asignación de técnicos, control de estados, tiempos de atención, comentarios, evidencias y métricas operativas en una interfaz moderna, responsive y con soporte dark mode.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+---
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+# Características principales
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+- Gestión completa de tickets
+- Roles y permisos (Usuario / Técnico / Administrador)
+- Dashboard operativo
+- Bandeja general de tickets
+- Asignación y toma de tickets
+- Estados operativos:
+  - Abierto
+  - En atención
+  - Resuelto
+  - Cerrado
+- Timeline operativo del ticket
+- Métricas de atención:
+  - Tiempo en cola
+  - Tiempo en atención
+  - Tiempo total
+- Comentarios internos
+- Adjuntos y evidencias
+- Indicadores visuales de atención
+- Interfaz institucional moderna
+- Responsive design
+- Dark mode
 
-## Learning Laravel
+---
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+# Tecnologías utilizadas
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+- Laravel 12
+- PHP 8.3
+- Blade
+- Tailwind CSS
+- Vite
+- MySQL
+- Spatie Laravel Permission
 
-## Laravel Sponsors
+---
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+# Módulos implementados
 
-### Premium Partners
+## Autenticación
+- Login seguro
+- Recuperación de contraseña
+- Gestión de perfil
+- Roles y permisos
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+## Tickets
+- Creación de tickets
+- Bandeja general
+- Historial
+- Tickets asignados
+- Seguimiento operativo
+- Gestión de estados
+- Línea de tiempo
+- Comentarios
 
-## Contributing
+## Administración
+- Gestión de usuarios
+- Gestión de técnicos
+- Dashboard administrativo
+- Indicadores operativos
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+## Evidencias
+- Adjuntos por ticket
+- Vista previa de imágenes
+- Gestión de archivos
 
-## Code of Conduct
+---
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+# Roles del sistema
 
-## Security Vulnerabilities
+## Usuario
+- Registrar tickets
+- Ver seguimiento
+- Agregar comentarios
+- Adjuntar evidencias
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+## Técnico
+- Tomar tickets
+- Gestionar atención
+- Resolver tickets
+- Registrar comentarios
 
-## License
+## Administrador
+- Control total del sistema
+- Gestión de usuarios
+- Cierre de tickets
+- Supervisión operativa
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+---
+
+# Instalación
+
+```bash
+git clone https://github.com/marcelovelasco96/support-ticket-system.git
+```
+
+```bash
+composer install
+```
+
+```bash
+npm install
+```
+
+```bash
+cp .env.example .env
+```
+
+```bash
+php artisan key:generate
+```
+
+```bash
+php artisan migrate --seed
+```
+
+```bash
+npm run dev
+```
+
+```bash
+php artisan serve
+```
+
+---
+
+# Estado del proyecto
+
+Proyecto actualmente en desarrollo y mejora continua para entorno institucional.
+
+---
+
+# Autor
+
+**Marcelo Velasco**  
+Ingeniero de Sistemas  
+Backend Developer | Laravel | SQL Server | Power BI
